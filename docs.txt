@@ -1,0 +1,6 @@
+RESOURCE	HTTP METHOD	         ROUTE	                    DESCRIPTION
+users	    GET	                /api/users/me	            Retrieve profile data
+auth	    POST	            /api/auth/register	        Create a new user
+auth	    POST	            /api/auth/login     	    Sign in the user
+auth	    GET             	/api/auth/refresh       	Refresh the access token
+auth	    GET	                /api/auth/logout        	Logout the user
