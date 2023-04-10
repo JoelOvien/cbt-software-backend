@@ -20,9 +20,7 @@ func init() {
 
 func main() {
 	// We evoke this function provided by GORM to create the db migration and push changes to the database
-	initializers.DB.AutoMigrate(&models.AdminUser{})
-	initializers.DB.AutoMigrate(&models.CandidateUser{})
-	initializers.DB.AutoMigrate(&models.ExaminerUser{})
+	initializers.DB.AutoMigrate(&models.User{})
 
 	fmt.Println("🚀 Migration complete")
 }
