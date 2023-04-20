@@ -10,9 +10,9 @@ import (
 type userType string
 
 const (
-	Admin     userType = "ADMIN"
-	Candidate userType = "CANDIDATE"
-	Examiner  userType = "EXAMINER"
+	Administrator userType = "ADMINISTRATOR"
+	Candidate     userType = "CANDIDATE"
+	Examiner      userType = "EXAMINER"
 )
 
 func (u userType) Value() (driver.Value, error) {
