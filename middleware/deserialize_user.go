@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"backend/cbt-backend/initializers"
+	"backend/cbt-backend/database"
 	"backend/cbt-backend/models"
 	"backend/cbt-backend/utils"
 	"github.com/gin-gonic/gin"
@@ -31,7 +31,7 @@ func DeserializeUser() gin.HandlerFunc {
 			return
 		}
 
-		config, _ := initializers.LoadConfig(".")
+		config, _ := database.LoadConfig(".")
 
 		//called this function to validate the access token and extract the payload (user’s ID) we stored in it
 		sub, err := utils.ValidateToken(accessToken, config.AccessTokenPublicKey)
@@ -41,7 +41,7 @@ func DeserializeUser() gin.HandlerFunc {
 		}
 
 		var user models.User
-		result := initializers.DB.First(&user, "id = ?", fmt.Sprint(sub))
+		result := database.DB.First(&user, "id = ?", fmt.Sprint(sub))
 		if result.Error != nil {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": "the user belonging to this token no logger exists"})
 			return

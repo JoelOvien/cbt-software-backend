@@ -1,6 +1,6 @@
 // This code connects the app to the Postgres server
 
-package initializers
+package database
 
 import (
 	"fmt"

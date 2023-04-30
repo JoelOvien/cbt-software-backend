@@ -1,49 +1,29 @@
 package models
 
 import (
-	"database/sql/driver"
-	"fmt"
 	"github.com/google/uuid"
 	"time"
 )
 
-type userType string
-
-const (
-	Administrator userType = "ADMINISTRATOR"
-	Candidate     userType = "CANDIDATE"
-	Examiner      userType = "EXAMINER"
-)
-
-func (u userType) Value() (driver.Value, error) {
-	return string(u), nil
-}
-
-func (u *userType) Scan(value interface{}) error {
-	if value == nil {
-		*u = ""
-		return nil
-	}
-	switch s := value.(type) {
-	case []byte:
-		*u = userType(s)
-		return nil
-	case string:
-		*u = userType(s)
-		return nil
-	default:
-		return fmt.Errorf("unsupported Scan value type: %T", value)
-	}
-}
-
-// User struct represents the model for a user
 type User struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"id"`
-	Name      string    `gorm:"type:varchar(255);not null" json:"name"`
-	Email     string    `gorm:"not null" json:"email"`
-	UserName  string    `gorm:"uniqueIndex; not null" json:"user_name"`
-	Password  string    `gorm:"not null" json:"password"`
-	UserType  userType  `gorm:"type:user_enum" json:"user_type"`
-	CreatedAt time.Time `gorm:"not null" json:"created_at"`
-	UpdatedAt time.Time `gorm:"not null" json:"updated_at"`
+	ID         uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"_id"`
+	Name       string    `gorm:"not null" gorm:"not null"json:"name" validate:"required,min=4,max=100"`
+	Id_Number  string    `gorm:"not null" json:"id_number" validate:"required,min=4,max=100"`
+	Password   string    `gorm:"not null" json:"password" validate:"required,min=8"`
+	Email      string    `gorm:"not null" json:"email" validate:"email,required"`
+	User_type  string    `gorm:"not null" json:"user_type" validate:"required,eq=ADMIN|eq=STUDENT|eq=EXAMINER"`
+	Created_at time.Time `gorm:"not null" json:"created_at"`
+	Updated_at time.Time `gorm:"not null" json:"updated_at"`
+	User_id    string    `gorm:"not null" json:"user_id"`
+}
+
+type UserResponse struct {
+	ID         uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"_id"`
+	Name       string    `gorm:"not null" gorm:"not null"json:"name" validate:"required,min=4,max=100"`
+	Id_Number  string    `gorm:"not null" json:"id_number" validate:"required,min=4,max=100"`
+	Email      string    `gorm:"not null" json:"email" validate:"email,required"`
+	User_type  string    `gorm:"not null" json:"user_type" validate:"required,eq=ADMIN|eq=STUDENT|eq=EXAMINER"`
+	Created_at time.Time `gorm:"not null" json:"created_at"`
+	Updated_at time.Time `gorm:"not null" json:"updated_at"`
+	User_id    string    `gorm:"not null" json:"user_id"`
 }

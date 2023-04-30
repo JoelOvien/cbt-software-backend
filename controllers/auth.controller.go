@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"backend/cbt-backend/initializers"
+	"backend/cbt-backend/database"
 	"backend/cbt-backend/models"
 	"backend/cbt-backend/utils"
 	"github.com/google/uuid"
@@ -36,19 +36,19 @@ func (aac *AuthController) SignUpUser(ctx *gin.Context) {
 	}
 
 	if payload.Name == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Name field is required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "name field is required"})
 		return
 	}
 	if payload.Email == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Email field is required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "email field is required"})
 		return
 	}
-	if payload.UserName == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "username field is required"})
+	if payload.Id_Number == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "id_number field is required"})
 		return
 	}
 
-	if payload.UserType == "" {
+	if payload.User_type == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "user_type field is required"})
 		return
 	}
@@ -63,25 +63,36 @@ func (aac *AuthController) SignUpUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
+	// First, check if a user with the same Id_Number already exists
+	existingUser := &models.User{}
+	existingIDResult := aac.DB.Where("id_number = ?", payload.Id_Number).First(existingUser)
+	if existingIDResult.Error == nil {
+		ctx.JSON(http.StatusConflict, gin.H{"status": http.StatusBadRequest, "message": "User with that Id already exists"})
+		return
+	}
+
+	existingEmailResult := aac.DB.Where("email = ?", payload.Email).First(existingUser)
+	if existingEmailResult.Error == nil {
+		ctx.JSON(http.StatusConflict, gin.H{"status": http.StatusBadRequest, "message": "User with that email already exists"})
+		return
+	}
 
 	now := time.Now()
 	newUser := models.User{
-		Name:      payload.Name,
-		Email:     strings.ToLower(payload.Email),
-		UserName:  payload.UserName,
-		Password:  hashedPassword,
-		UserType:  payload.UserType,
-		CreatedAt: now,
-		UpdatedAt: now,
+		Name:       payload.Name,
+		Id_Number:  payload.Id_Number,
+		Password:   hashedPassword,
+		Email:      strings.ToLower(payload.Email),
+		User_type:  payload.User_type,
+		Created_at: now,
+		Updated_at: now,
+		User_id:    payload.Id_Number + "_" + payload.User_type,
 	}
 
 	result := aac.DB.Create(&newUser)
 
 	if result.Error != nil && strings.Contains(result.Error.Error(), "duplicate key value violates unique") {
-		ctx.JSON(http.StatusConflict, gin.H{"status": http.StatusBadRequest, "message": "User with that Staff Id already exists"})
-		return
-	} else if result.Error != nil && strings.Contains(result.Error.Error(), "duplicated key not allowed") {
-		ctx.JSON(http.StatusConflict, gin.H{"status": http.StatusBadRequest, "message": "User with that username already exists"})
+		ctx.JSON(http.StatusConflict, gin.H{"status": http.StatusBadRequest, "message": "User with that Id already exists"})
 		return
 	} else if result.Error != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "error", "message": "Something bad happened"})
@@ -104,14 +115,15 @@ func (aac *AuthController) SignUpUser(ctx *gin.Context) {
 		return
 	}
 
-	userResponse := &models.User{
-		ID:        newUser.ID,
-		Name:      newUser.Name,
-		Email:     newUser.Email,
-		UserName:  newUser.UserName,
-		UserType:  newUser.UserType,
-		CreatedAt: newUser.CreatedAt,
-		UpdatedAt: newUser.UpdatedAt,
+	userResponse := &models.UserResponse{
+		ID:         newUser.ID,
+		Name:       newUser.Name,
+		Email:      newUser.Email,
+		Id_Number:  newUser.Id_Number,
+		User_type:  newUser.User_type,
+		Created_at: newUser.Created_at,
+		Updated_at: newUser.Updated_at,
+		User_id:    newUser.User_id,
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": gin.H{"user": userResponse}})
@@ -126,15 +138,15 @@ func (aac *AuthController) SignInUser(ctx *gin.Context) {
 	}
 
 	var user models.User
-	result := aac.DB.First(&user, "user_name = ?", payload.UserName)
+	result := aac.DB.First(&user, "Id_Number = ?", payload.Id_Number)
 
 	if result.Error != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Invalid username or Password"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Invalid id or Password"})
 		return
 	}
 
 	if user.ID == uuid.Nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Invalid username or Password"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Invalid id or Password"})
 		return
 	}
 
@@ -143,7 +155,7 @@ func (aac *AuthController) SignInUser(ctx *gin.Context) {
 		return
 	}
 
-	config, _ := initializers.LoadConfig(".")
+	config, _ := database.LoadConfig(".")
 
 	// Generate Tokens
 	accessToken, err := utils.CreateToken(config.AccessTokenExpiresIn, user.ID, config.AccessTokenPrivateKey)
@@ -165,17 +177,18 @@ func (aac *AuthController) SignInUser(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, config.RefreshTokenMaxAge*60, "/", "localhost", false, true)
 	ctx.SetCookie("logged_in", "true", config.AccessTokenMaxAge*60, "/", "localhost", false, false)
 
-	userResponse := &models.User{
-		ID:        user.ID,
-		Name:      user.Name,
-		Email:     user.Email,
-		UserName:  user.UserName,
-		UserType:  user.UserType,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+	userResponse := &models.UserResponse{
+		ID:         user.ID,
+		Name:       user.Name,
+		Email:      user.Email,
+		Id_Number:  user.Id_Number,
+		User_type:  user.User_type,
+		Created_at: user.Created_at,
+		Updated_at: user.Updated_at,
+		User_id:    user.User_id,
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": accessToken, "user": userResponse})
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": accessToken, "refresh_token": refreshToken, "user": userResponse})
 }
 
 // RefreshAccessToken to refresh Admin access toke
@@ -189,7 +202,7 @@ func (aac *AuthController) RefreshAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	config, _ := initializers.LoadConfig(".")
+	config, _ := database.LoadConfig(".")
 
 	sub, err := utils.ValidateToken(cookie, config.RefreshTokenPublicKey)
 	if err != nil {

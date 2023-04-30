@@ -5,22 +5,22 @@ import (
 	"fmt"
 	"log"
 
-	"backend/cbt-backend/initializers"
+	"backend/cbt-backend/database"
 )
 
 // Here we load the environment variables and created the connection pool to Postgres db
 func init() {
-	config, err := initializers.LoadConfig(".")
+	config, err := database.LoadConfig(".")
 	if err != nil {
 		log.Fatal("? Could not load environment variables", err)
 	}
 
-	initializers.ConnectDB(&config)
+	database.ConnectDB(&config)
 }
 
 func main() {
 	// We evoke this function provided by GORM to create the db migration and push changes to the database
-	initializers.DB.AutoMigrate(&models.User{})
+	database.DB.AutoMigrate(&models.User{})
 
 	fmt.Println("🚀 Migration complete")
 }

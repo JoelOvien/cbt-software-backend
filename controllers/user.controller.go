@@ -23,13 +23,13 @@ func (uc *UserController) GetMe(ctx *gin.Context) {
 	currentUser := ctx.MustGet("currentUser").(models.User)
 
 	userResponse := &models.User{
-		ID:        currentUser.ID,
-		Name:      currentUser.Name,
-		UserName:  currentUser.UserName,
-		Email:     currentUser.Email,
-		UserType:  currentUser.UserType,
-		CreatedAt: currentUser.CreatedAt,
-		UpdatedAt: currentUser.UpdatedAt,
+		ID:         currentUser.ID,
+		Name:       currentUser.Name,
+		Id_Number:  currentUser.Id_Number,
+		Email:      currentUser.Email,
+		User_type:  currentUser.User_type,
+		Created_at: currentUser.Created_at,
+		Updated_at: currentUser.Updated_at,
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": gin.H{"user": userResponse}})
